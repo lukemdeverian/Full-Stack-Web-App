@@ -1,0 +1,4 @@
+codescan.db
+
+__pycache__/
+*.pyc

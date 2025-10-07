@@ -78,8 +78,7 @@ def delete_results(file_id):
 
 def analyze(filepath, language, file_id):
     """
-    Placeholder analyzer — returns empty findings for now.
-    Will be replaced with Sentinel integration in Phase 2.
+    Not implemented yet.
     """
     return []
 
