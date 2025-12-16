@@ -1,4 +1,17 @@
+
+# Database
 codescan.db
 
+# Python cache files
 __pycache__/
 *.pyc
+*.pyo
+
+# Environment
+.env
+venv/
+.venv/
+
+# Uploaded files
+uploads/*
+!uploads/.gitkeep

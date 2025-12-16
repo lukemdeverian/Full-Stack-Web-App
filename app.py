@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 import os
-from database import init_db, save_file, save_findings, get_all_results, get_results_by_file
+from database import init_db, save_file, get_all_files, get_file_by_id, delete_file
 
 app = Flask(__name__)
 
@@ -13,6 +13,14 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def detect_language(filename):
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext == 'py':
+        return 'Python'
+    elif ext in {'c', 'cpp', 'h', 'hpp'}:
+        return 'C/C++'
+    return 'Unknown'
 
 @app.route('/')
 def index():
@@ -31,56 +39,39 @@ def upload_file():
     if not allowed_file(file.filename):
         return jsonify({'error': 'File type not allowed. Upload C, C++, or Python files only.'}), 400
 
-    # Save file to uploads folder
     filename = file.filename
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Detect language
-    ext = filename.rsplit('.', 1)[1].lower()
-    if ext == 'py':
-        language = 'Python'
-    elif ext in {'c', 'cpp', 'h', 'hpp'}:
-        language = 'C/C++'
-    else:
-        language = 'Unknown'
-
-    # Save file metadata to database
+    language = detect_language(filename)
     file_id = save_file(filename, language)
 
-    findings = analyze(filepath, language, file_id)
-
-    save_findings(findings)
-
     return jsonify({
-        'message': 'File uploaded and scanned successfully',
+        'message': 'File uploaded successfully',
         'file_id': file_id,
         'filename': filename,
-        'language': language,
-        'findings_count': len(findings)
+        'language': language
     })
 
-@app.route('/results', methods=['GET'])
-def get_results():
-    results = get_all_results()
-    return jsonify(results)
+@app.route('/files', methods=['GET'])
+def get_files():
+    files = get_all_files()
+    return jsonify(files)
 
-@app.route('/results/<int:file_id>', methods=['GET'])
-def get_file_results(file_id):
-    results = get_results_by_file(file_id)
-    return jsonify(results)
+@app.route('/files/<int:file_id>', methods=['GET'])
+def get_file(file_id):
+    file = get_file_by_id(file_id)
+    if not file:
+        return jsonify({'error': 'File not found'}), 404
+    return jsonify(file)
 
-@app.route('/results/<int:file_id>', methods=['DELETE'])
-def delete_results(file_id):
-    from database import delete_file
+@app.route('/files/<int:file_id>', methods=['DELETE'])
+def remove_file(file_id):
+    file = get_file_by_id(file_id)
+    if not file:
+        return jsonify({'error': 'File not found'}), 404
     delete_file(file_id)
-    return jsonify({'message': f'Results for file {file_id} deleted.'})
-
-def analyze(filepath, language, file_id):
-    """
-    Not implemented yet.
-    """
-    return []
+    return jsonify({'message': f'File {file_id} deleted successfully'})
 
 if __name__ == '__main__':
     init_db()

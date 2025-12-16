@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeScan — File Upload Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0f1117;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #1a1d27;
+            padding: 20px 40px;
+            border-bottom: 2px solid #2a2d3e;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            color: #4fc3f7;
+        }
+
+        header p {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .card {
+            background: #1a1d27;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #2a2d3e;
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            color: #4fc3f7;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #1a1d27;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #2a2d3e;
+        }
+
+        .stat-card .num {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4fc3f7;
+        }
+
+        .stat-card .label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Upload */
+        .upload-area {
+            border: 2px dashed #2a2d3e;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .upload-area:hover { border-color: #4fc3f7; }
+
+        .upload-area input[type="file"] { display: none; }
+
+        .upload-area label {
+            cursor: pointer;
+            color: #4fc3f7;
+            font-size: 1rem;
+        }
+
+        .upload-area p {
+            color: #888;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        .btn {
+            background: #4fc3f7;
+            color: #0f1117;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background: #81d4fa; }
+        .btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+        #upload-status {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            min-height: 20px;
+        }
+
+        .status-success { color: #66bb6a; }
+        .status-error   { color: #ef5350; }
+
+        /* Chart */
+        .chart-container {
+            position: relative;
+            height: 260px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th {
+            background: #12151f;
+            color: #4fc3f7;
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #1f2335;
+        }
+
+        tr:hover td { background: #1f2335; }
+
+        .lang-badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .lang-python { background: #3572A5; color: #fff; }
+        .lang-cpp    { background: #f34b7d; color: #fff; }
+        .lang-unknown { background: #444; color: #aaa; }
+
+        .delete-btn {
+            background: none;
+            border: 1px solid #ef5350;
+            color: #ef5350;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #ef5350;
+            color: #fff;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📂 CodeScan</h1>
+    <p>File Upload Dashboard</p>
+</header>
+
+<div class="container">
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="num" id="stat-total">0</div>
+            <div class="label">Files Uploaded</div>
+        </div>
+        <div class="stat-card">
+            <div class="num" id="stat-python">0</div>
+            <div class="label">Python Files</div>
+        </div>
+        <div class="stat-card">
+            <div class="num" id="stat-cpp">0</div>
+            <div class="label">C / C++ Files</div>
+        </div>
+    </div>
+
+    <!-- Upload -->
+    <div class="card">
+        <h2>Upload File</h2>
+        <div class="upload-area">
+            <input type="file" id="file-input" accept=".c,.cpp,.h,.hpp,.py">
+            <label for="file-input">📂 Click to select a file</label>
+            <p>Supported: .c, .cpp, .h, .hpp, .py — Max 5MB</p>
+        </div>
+        <button class="btn" id="upload-btn" disabled>Upload File</button>
+        <div id="upload-status"></div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card">
+        <h2>Files by Language</h2>
+        <div class="chart-container">
+            <canvas id="language-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- File Table -->
+    <div class="card">
+        <h2>Uploaded Files</h2>
+        <div id="files-container">
+            <div class="empty-state">No files uploaded yet.</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let languageChart = null;
+
+    // ── File input ──────────────────────────────────────────────
+    const fileInput = document.getElementById('file-input');
+    const uploadBtn = document.getElementById('upload-btn');
+    const statusEl  = document.getElementById('upload-status');
+
+    fileInput.addEventListener('change', () => {
+        uploadBtn.disabled = !fileInput.files.length;
+        statusEl.textContent = fileInput.files.length
+            ? `Selected: ${fileInput.files[0].name}`
+            : '';
+        statusEl.className = '';
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        uploadBtn.disabled = true;
+        statusEl.textContent = 'Uploading...';
+        statusEl.className = '';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res  = await fetch('/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (res.ok) {
+                statusEl.textContent = `✓ ${data.filename} uploaded successfully (${data.language})`;
+                statusEl.className = 'status-success';
+                fileInput.value = '';
+                uploadBtn.disabled = true;
+                loadFiles();
+            } else {
+                statusEl.textContent = `✗ ${data.error}`;
+                statusEl.className = 'status-error';
+                uploadBtn.disabled = false;
+            }
+        } catch (err) {
+            statusEl.textContent = '✗ Server error. Is the backend running?';
+            statusEl.className = 'status-error';
+            uploadBtn.disabled = false;
+        }
+    });
+
+    // ── Load files ──────────────────────────────────────────────
+    async function loadFiles() {
+        try {
+            const res   = await fetch('/files');
+            const files = await res.json();
+            updateStats(files);
+            updateChart(files);
+            renderTable(files);
+        } catch (err) {
+            console.error('Failed to load files:', err);
+        }
+    }
+
+    // ── Stats ───────────────────────────────────────────────────
+    function updateStats(files) {
+        document.getElementById('stat-total').textContent  = files.length;
+        document.getElementById('stat-python').textContent =
+            files.filter(f => f.language === 'Python').length;
+        document.getElementById('stat-cpp').textContent =
+            files.filter(f => f.language === 'C/C++').length;
+    }
+
+    // ── Chart ───────────────────────────────────────────────────
+    function updateChart(files) {
+        const counts = {};
+        files.forEach(f => {
+            counts[f.language] = (counts[f.language] || 0) + 1;
+        });
+
+        if (languageChart) languageChart.destroy();
+        languageChart = new Chart(document.getElementById('language-chart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(counts),
+                datasets: [{
+                    label: 'Files',
+                    data: Object.values(counts),
+                    backgroundColor: ['#3572A5', '#f34b7d', '#4fc3f7'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#1f2335' } },
+                    y: {
+                        ticks: { color: '#888', stepSize: 1 },
+                        grid: { color: '#1f2335' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // ── Table ───────────────────────────────────────────────────
+    function renderTable(files) {
+        const container = document.getElementById('files-container');
+
+        if (!files.length) {
+            container.innerHTML = '<div class="empty-state">No files uploaded yet.</div>';
+            return;
+        }
+
+        const langClass = lang => {
+            if (lang === 'Python') return 'lang-python';
+            if (lang === 'C/C++')  return 'lang-cpp';
+            return 'lang-unknown';
+        };
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Filename</th>
+                        <th>Language</th>
+                        <th>Upload Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${files.map(f => `
+                        <tr id="row-${f.id}">
+                            <td>${f.id}</td>
+                            <td>${f.filename}</td>
+                            <td><span class="lang-badge ${langClass(f.language)}">${f.language}</span></td>
+                            <td>${f.upload_date}</td>
+                            <td>
+                                <button class="delete-btn" onclick="deleteFile(${f.id})">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    }
+
+    // ── Delete ──────────────────────────────────────────────────
+    async function deleteFile(file_id) {
+        try {
+            const res = await fetch(`/files/${file_id}`, { method: 'DELETE' });
+            if (res.ok) {
+                loadFiles();
+            }
+        } catch (err) {
+            console.error('Delete failed:', err);
+        }
+    }
+
+    // Load on page start
+    loadFiles();
+</script>
+
+</body>
+</html>
