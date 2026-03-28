@@ -6,6 +6,7 @@ codescan.db
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
 # Environment
 .env
@@ -15,3 +16,9 @@ venv/
 # Uploaded files
 uploads/*
 !uploads/.gitkeep
+
+*.html
+!templates/index.html
+
+*.json
+imgRead.c
