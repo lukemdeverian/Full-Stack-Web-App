@@ -1,9 +1,16 @@
+import sys
+from pathlib import Path
+
+# Add the current folder (codescan) to the module search path
+sys.path.append(str(Path(__file__).parent.resolve()))
+
 from flask import Flask, request, jsonify, render_template
 import os
 import sys
 
-# Add sentinel to path to import its modules
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'sentinel'))
+# Ensure imports use the sentinel package in the app root, not sentinel/sentinel.py
+# (avoid adding sentinel/ itself to sys.path, which makes `import sentinel` resolve to sentinel/sentinel.py)
+# sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'sentinel'))
 
 from sentinel.rules.cpp_rules import CPP_RULES
 from sentinel.rules.python_rules import PYTHON_RULES
