@@ -1,4 +1,4 @@
-# 🛡 CodeScan: Security Analysis Application
+# CodeScan: Security Analysis Application
 
 A full-stack web application for static security analysis of C, C++, and Python source code. Upload files through a browser-based dashboard, scan them for known vulnerability patterns, and view interactive reports with severity breakdowns, CWE references, and filterable results.
 
